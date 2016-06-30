@@ -43,6 +43,29 @@
 
 #include <boost/bind.hpp>
 
+namespace
+{
+  /**
+   * \brief returns the yaw angle from a quaternion
+   * \param q a quaternion in (x, y, z, w) format
+   * \return yaw euler angle [rad]
+   */
+  double headingFromQuaternion(const double* q)
+  {
+    if (!q)
+    {
+      return 0.0;
+    }
+
+    const double& x = q[0];
+    const double& y = q[1];
+    const double& z = q[2];
+    const double& w = q[3];
+
+    return atan2(2.0 * (x*y + w*z), 1.0 - 2.0 * (y*y + z*z));
+  }
+}
+
 namespace diff_drive_controller
 {
   namespace bacc = boost::accumulators;
@@ -74,22 +97,42 @@ namespace diff_drive_controller
 
   bool Odometry::update(double left_pos, double right_pos, const ros::Time &time)
   {
-    /// Get current wheel joint positions:
-    const double left_wheel_cur_pos  = left_pos  * wheel_radius_;
-    const double right_wheel_cur_pos = right_pos * wheel_radius_;
-
-    /// Estimate velocity of wheels using old and current position:
-    const double left_wheel_est_vel  = left_wheel_cur_pos  - left_wheel_old_pos_;
-    const double right_wheel_est_vel = right_wheel_cur_pos - right_wheel_old_pos_;
-
-    /// Update old position with current:
-    left_wheel_old_pos_  = left_wheel_cur_pos;
-    right_wheel_old_pos_ = right_wheel_cur_pos;
-
     /// Compute linear and angular diff:
-    const double linear  = (right_wheel_est_vel + left_wheel_est_vel) * 0.5 ;
-    const double angular = (right_wheel_est_vel - left_wheel_est_vel) / wheel_separation_;
+    const double linear  = linearDiff(left_pos, right_pos);
+    const double angular  = angularDiff(left_pos, right_pos);
 
+    updatePos(left_pos, right_pos);
+
+    return integrate(linear, angular, time);
+  }
+
+  void Odometry::updateOpenLoop(double linear, double angular, const ros::Time &time)
+  {
+    /// Save last linear and angular velocity:
+    linear_ = linear;
+    angular_ = angular;
+
+    /// Integrate odometry:
+    const double dt = (time - timestamp_).toSec();
+    timestamp_ = time;
+    integrate_fun_(linear * dt, angular * dt);
+  }
+
+  bool Odometry::updateWithImu(double left_pos, double right_pos, const double* orientation, const ros::Time &time)
+  {
+    const double linear = linearDiff(left_pos, right_pos);
+
+    /// Use heading from IMU values
+    const double heading = headingFromQuaternion(orientation);
+    const double angular = heading - heading_;
+
+    updatePos(left_pos, right_pos);
+
+    return integrate(linear, angular, time);
+  }
+
+  bool Odometry::integrate(double linear, double angular, const ros::Time& time)
+  {
     /// Integrate odometry:
     integrate_fun_(linear, angular);
 
@@ -110,16 +153,40 @@ namespace diff_drive_controller
     return true;
   }
 
-  void Odometry::updateOpenLoop(double linear, double angular, const ros::Time &time)
+  double Odometry::linearDiff(double left_pos, double right_pos)
   {
-    /// Save last linear and angular velocity:
-    linear_ = linear;
-    angular_ = angular;
+    /// Get current wheel joint positions:
+    const double left_wheel_cur_pos  = left_pos  * wheel_radius_;
+    const double right_wheel_cur_pos = right_pos * wheel_radius_;
 
-    /// Integrate odometry:
-    const double dt = (time - timestamp_).toSec();
-    timestamp_ = time;
-    integrate_fun_(linear * dt, angular * dt);
+    /// Estimate velocity of wheels using old and current position:
+    const double left_wheel_est_vel  = left_wheel_cur_pos  - left_wheel_old_pos_;
+    const double right_wheel_est_vel = right_wheel_cur_pos - right_wheel_old_pos_;
+
+    return (right_wheel_est_vel + left_wheel_est_vel) * 0.5 ;
+  }
+
+  double Odometry::angularDiff(double left_pos, double right_pos)
+  {
+    /// Get current wheel joint positions:
+    const double left_wheel_cur_pos  = left_pos  * wheel_radius_;
+    const double right_wheel_cur_pos = right_pos * wheel_radius_;
+
+    /// Estimate velocity of wheels using old and current position:
+    const double left_wheel_est_vel  = left_wheel_cur_pos  - left_wheel_old_pos_;
+    const double right_wheel_est_vel = right_wheel_cur_pos - right_wheel_old_pos_;
+
+    return (right_wheel_est_vel - left_wheel_est_vel) / wheel_separation_;
+  }
+
+  void Odometry::updatePos(double left_pos, double right_pos)
+  {
+    const double left_wheel_cur_pos  = left_pos  * wheel_radius_;
+    const double right_wheel_cur_pos = right_pos * wheel_radius_;
+    //
+    /// Update old position with current:
+    left_wheel_old_pos_  = left_wheel_cur_pos;
+    right_wheel_old_pos_ = right_wheel_cur_pos;
   }
 
   void Odometry::setWheelParams(double wheel_separation, double wheel_radius)

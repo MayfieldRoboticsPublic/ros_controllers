@@ -109,6 +109,7 @@ namespace diff_drive_controller{
 
   DiffDriveController::DiffDriveController()
     : open_loop_(false)
+    , use_imu_heading_(false)
     , command_struct_()
     , wheel_separation_(0.0)
     , wheel_radius_(0.0)
@@ -221,6 +222,15 @@ namespace diff_drive_controller{
     bool lookup_wheel_separation = !controller_nh.getParam("wheel_separation", wheel_separation_);
     bool lookup_wheel_radius = !controller_nh.getParam("wheel_radius", wheel_radius_);
 
+    // Use IMU for orientation (or not)
+    controller_nh.param("use_imu_heading", use_imu_heading_, false);
+    controller_nh.param("imu_name", imu_name_, imu_name_);
+    if (use_imu_heading_)
+    {
+      ROS_INFO_STREAM_NAMED(name_, "Using IMU for heading: " << imu_name_);
+    }
+
+
     if (!setOdomParamsFromUrdf(root_nh,
                               left_wheel_names[0],
                               right_wheel_names[0],
@@ -281,7 +291,15 @@ namespace diff_drive_controller{
       right_pos /= wheel_joints_size_;
 
       // Estimate linear and angular velocity using joint information
-      odometry_.update(left_pos, right_pos, time);
+      if (use_imu_heading_)
+      {
+        const double* orientation = imu_.getOrientation();
+        odometry_.updateWithImu(left_pos, right_pos, orientation, time);
+      }
+      else
+      {
+        odometry_.update(left_pos, right_pos, time);
+      }
     }
 
     // Publish odometry message
@@ -576,4 +594,25 @@ namespace diff_drive_controller{
     tf_odom_pub_->msg_.transforms[0].header.frame_id = odom_frame_id_;
   }
 
+  bool DiffDriveController::initRequest(hardware_interface::RobotHW* robot_hw,
+      ros::NodeHandle& root_nh, ros::NodeHandle &controller_nh,
+      std::set<std::string> &claimed_resources)
+  {
+    const bool ok = Controller<hardware_interface::VelocityJointInterface>::initRequest(robot_hw, root_nh, controller_nh, claimed_resources);
+
+    if (use_imu_heading_)
+    {
+      hardware_interface::ImuSensorInterface* imu_int = robot_hw->get<hardware_interface::ImuSensorInterface>();
+      if (!imu_int)
+      {
+        ROS_ERROR("This controller was configured to use an IMU but no ImuSensorInterface was found.");
+        return false;
+      }
+      imu_ = imu_int->getHandle(imu_name_);
+      const std::set<std::string>& claims = imu_int->getClaims();
+      claimed_resources.insert(claims.begin(), claims.end());
+    }
+
+    return ok;
+  }
 } // namespace diff_drive_controller
