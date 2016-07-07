@@ -38,6 +38,7 @@
 
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
+#include <hardware_interface/imu_sensor_interface.h>
 #include <pluginlib/class_list_macros.h>
 
 #include <nav_msgs/Odometry.h>
@@ -95,6 +96,11 @@ namespace diff_drive_controller{
      */
     void stopping(const ros::Time& /*time*/);
 
+  protected:
+    virtual bool initRequest(hardware_interface::RobotHW* robot_hw,
+        ros::NodeHandle& root_nh, ros::NodeHandle &controller_nh,
+        std::set<std::string> &claimed_resources);
+
   private:
     std::string name_;
 
@@ -106,6 +112,11 @@ namespace diff_drive_controller{
     /// Hardware handles:
     std::vector<hardware_interface::JointHandle> left_wheel_joints_;
     std::vector<hardware_interface::JointHandle> right_wheel_joints_;
+
+    /// If using the IMU for heading
+    bool use_imu_heading_;
+    std::string imu_name_;
+    hardware_interface::ImuSensorHandle imu_;
 
     /// Velocity command related:
     struct Commands

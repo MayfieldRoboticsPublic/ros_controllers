@@ -95,6 +95,16 @@ namespace diff_drive_controller
     void updateOpenLoop(double linear, double angular, const ros::Time &time);
 
     /**
+     * \brief Updates the odometry class with latest velocity command
+     * \param left_pos    Left  wheel position [rad]
+     * \param right_pos   Right wheel position [rad]
+     * \param orientation Orientation quaternion (x, y, z, w)
+     * \param time        Current time
+     * \return true if the odometry is actually updated
+     */
+    bool updateWithImu(double left_pos, double right_pos, const double* orientation, const ros::Time &time);
+
+    /**
      * \brief heading getter
      * \return heading [rad]
      */
@@ -153,6 +163,7 @@ namespace diff_drive_controller
     void setVelocityRollingWindowSize(size_t velocity_rolling_window_size);
 
   private:
+  private:
 
     /// Rolling mean accumulator and window:
     typedef bacc::accumulator_set<double, bacc::stats<bacc::tag::rolling_mean> > RollingMeanAcc;
@@ -176,6 +187,37 @@ namespace diff_drive_controller
      *  \brief Reset linear and angular accumulators
      */
     void resetAccumulators();
+
+    /**
+     * \brief Compute the linear component of the robot position displacement
+     * \param left_pos    Left  wheel position [rad]
+     * \param right_pos   Right wheel position [rad]
+     */
+    double linearDiff(double left_pos, double right_pos);
+
+    /**
+     * \brief Compute the angular component of the robot position displacement
+     * \param left_pos    Left  wheel position [rad]
+     * \param right_pos   Right wheel position [rad]
+     */
+    double angularDiff(double left_pos, double right_pos);
+
+    /**
+     * \brief Update the current wheel positions in the state
+     * \param left_pos    Left  wheel position [rad]
+     * \param right_pos   Right wheel position [rad]
+     */
+    void updatePos(double left_pos, double right_pos);
+
+    /**
+     * \brief Integrate linear and angular components of the position displacement
+     * \param linear  Linear  velocity   [m] (linear  displacement, i.e. m/s * dt) computed by encoders
+     * \param angular Angular velocity [rad] (angular displacement, i.e. m/s * dt) computed by encoders
+     * \param time        Current time
+     * \return true if integration was successfully performed
+     */
+    bool integrate(double linear, double angular, const ros::Time& time);
+
 
     /// Current timestamp:
     ros::Time timestamp_;
