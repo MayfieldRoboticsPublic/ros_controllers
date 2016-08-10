@@ -373,7 +373,10 @@ namespace diff_drive_controller{
 
   void DiffDriveController::starting(const ros::Time& time)
   {
+    limiter_lin_.reset_acceleration_limits();
+    limiter_ang_.reset_acceleration_limits();
     brake();
+    command_.readFromRT(); // Clear RT buffer
 
     // Register starting time used to keep fixed rate
     last_state_publish_time_ = time;
