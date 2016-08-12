@@ -69,7 +69,6 @@ namespace diff_drive_controller
   , max_acceleration(max_acceleration)
   , min_jerk(min_jerk)
   , max_jerk(max_jerk)
-  , reset_request(false)
   {
   }
 
@@ -80,9 +79,6 @@ namespace diff_drive_controller
     limit_jerk(v, v0, v1, dt);
     limit_acceleration(v, v0, dt);
     limit_velocity(v);
-    if(reset_request) {
-      reset_request = false;
-    }
 
     return tmp != 0.0 ? v / tmp : 1.0;
   }
@@ -102,9 +98,7 @@ namespace diff_drive_controller
   double SpeedLimiter::limit_acceleration(double& v, double v0, double dt)
   {
     const double tmp = v;
-    if (reset_request) {
-        return 1.0;
-    }
+
     if (has_acceleration_limits)
     {
       const double dv_min = min_acceleration * dt;
@@ -140,9 +134,5 @@ namespace diff_drive_controller
     return tmp != 0.0 ? v / tmp : 1.0;
   }
 
-  void SpeedLimiter::reset_acceleration_limits()
-  {
-      reset_request = true;
-  }
 
 } // namespace diff_drive_controller

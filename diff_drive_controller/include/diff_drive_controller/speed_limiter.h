@@ -107,11 +107,6 @@ namespace diff_drive_controller
      */
     double limit_jerk(double& v, double v0, double v1, double dt);
 
-    /**
-     * Resets the acceleration limit
-     */
-    void reset_acceleration_limits();
-
   public:
     // Enable/Disable velocity/acceleration/jerk limits:
     bool has_velocity_limits;
@@ -130,8 +125,6 @@ namespace diff_drive_controller
     double min_jerk;
     double max_jerk;
 
-    // Reset Request:
-    bool reset_request;
   };
 
 } // namespace diff_drive_controller
