@@ -124,6 +124,7 @@ namespace diff_drive_controller
     // Jerk limits:
     double min_jerk;
     double max_jerk;
+
   };
 
 } // namespace diff_drive_controller
