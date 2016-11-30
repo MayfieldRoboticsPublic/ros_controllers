@@ -77,6 +77,7 @@ namespace diff_drive_controller
   , heading_(0.0)
   , linear_(0.0)
   , angular_(0.0)
+  , first_update_(true)
   , wheel_separation_(0.0)
   , wheel_radius_(0.0)
   , left_wheel_old_pos_(0.0)
@@ -120,6 +121,12 @@ namespace diff_drive_controller
 
   bool Odometry::updateWithImu(double left_pos, double right_pos, const double* orientation, const ros::Time &time)
   {
+    if(first_update_){
+        left_wheel_old_pos_ = left_pos;
+        right_wheel_old_pos_ = right_pos;
+        first_update_ = false;
+        return true;
+    }
     const double linear = linearDiff(left_pos, right_pos);
 
     /// Use heading from IMU values

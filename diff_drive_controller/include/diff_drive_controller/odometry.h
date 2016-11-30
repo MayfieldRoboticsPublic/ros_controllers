@@ -246,6 +246,8 @@ namespace diff_drive_controller
 
     /// Integration funcion, used to integrate the odometry:
     IntegrationFunction integrate_fun_;
+
+    bool first_update_;
   };
 }
 
