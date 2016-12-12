@@ -74,8 +74,10 @@ namespace diff_drive_controller
     /**
      * \brief Initialize the odometry
      * \param time Current time
+     * \param left_pos position of the left wheel
+     * \param right_pos position of the right_wheel
      */
-    void init(const ros::Time &time);
+    void init(const ros::Time &time, double left_pos, double right_pos);
 
     /**
      * \brief Updates the odometry class with latest wheels position

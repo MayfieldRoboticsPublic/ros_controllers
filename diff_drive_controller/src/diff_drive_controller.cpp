@@ -121,6 +121,7 @@ namespace diff_drive_controller{
     , odom_frame_id_("odom")
     , enable_odom_tf_(true)
     , wheel_joints_size_(0)
+    , odom_initialized(false)
   {
   }
 
@@ -268,13 +269,20 @@ namespace diff_drive_controller{
 
   void DiffDriveController::update(const ros::Time& time, const ros::Duration& period)
   {
+
     // COMPUTE AND PUBLISH ODOMETRY
     if (open_loop_)
     {
+      if (!odom_initialized)
+      {
+        odometry_.init(time, 0.0, 0.0);
+        odom_initialized = true;
+      }
       odometry_.updateOpenLoop(last0_cmd_.lin, last0_cmd_.ang, time);
     }
     else
     {
+
       double left_pos  = 0.0;
       double right_pos = 0.0;
       for (size_t i = 0; i < wheel_joints_size_; ++i)
@@ -289,6 +297,12 @@ namespace diff_drive_controller{
       }
       left_pos  /= wheel_joints_size_;
       right_pos /= wheel_joints_size_;
+
+      if (odom_initialized)
+      {
+        odometry_.init(time, left_pos, right_pos);
+        return;
+      }
 
       // Estimate linear and angular velocity using joint information
       if (use_imu_heading_)
@@ -382,8 +396,6 @@ namespace diff_drive_controller{
 
     // Register starting time used to keep fixed rate
     last_state_publish_time_ = time;
-
-    odometry_.init(time);
   }
 
   void DiffDriveController::stopping(const ros::Time& /*time*/)

@@ -160,6 +160,7 @@ namespace diff_drive_controller{
 
     /// Whether to publish odometry to tf or not:
     bool enable_odom_tf_;
+    bool odom_initialized;
 
     /// Number of wheel joints:
     size_t wheel_joints_size_;
@@ -169,6 +170,7 @@ namespace diff_drive_controller{
     Commands last0_cmd_;
     SpeedLimiter limiter_lin_;
     SpeedLimiter limiter_ang_;
+
 
   private:
     /**
