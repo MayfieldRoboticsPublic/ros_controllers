@@ -298,9 +298,10 @@ namespace diff_drive_controller{
       left_pos  /= wheel_joints_size_;
       right_pos /= wheel_joints_size_;
 
-      if (odom_initialized)
+      if (!odom_initialized)
       {
         odometry_.init(time, left_pos, right_pos);
+        odom_initialized = true;
         return;
       }
 
