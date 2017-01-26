@@ -380,8 +380,8 @@ namespace diff_drive_controller{
     last1_cmd_.ang = 0.0;
     command_struct_.ang   = 0;
     command_struct_.lin   = 0;
-    command_struct_.stamp = ros::Time::now();
-    command_.writeFromNonRT(command_struct_); // Clear RT buffer
+    command_struct_.stamp = time;
+    command_.initRT(command_struct_); // Clear RT buffer
 
     // Register starting time used to keep fixed rate
     last_state_publish_time_ = time;
