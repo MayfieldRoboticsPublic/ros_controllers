@@ -604,7 +604,7 @@ namespace diff_drive_controller{
 
   bool DiffDriveController::initRequest(hardware_interface::RobotHW* robot_hw,
       ros::NodeHandle& root_nh, ros::NodeHandle &controller_nh,
-      std::set<std::string> &claimed_resources)
+      ClaimedResources &claimed_resources)
   {
     const bool ok = Controller<hardware_interface::VelocityJointInterface>::initRequest(robot_hw, root_nh, controller_nh, claimed_resources);
 
@@ -617,8 +617,6 @@ namespace diff_drive_controller{
         return false;
       }
       imu_ = imu_int->getHandle(imu_name_);
-      const std::set<std::string>& claims = imu_int->getClaims();
-      claimed_resources.insert(claims.begin(), claims.end());
     }
 
     return ok;
